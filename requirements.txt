@@ -14,7 +14,7 @@ mccabe==0.6.1
 openpyxl==2.4.11
 pycparser==2.20
 pylint==2.6.0
-python-telegram-bot @ ./python_telegram_bot-12.8-py2.py3-none-any.whl
+python_telegram_bot-12.8-py2.py3-none-any.whl
 records==0.5.3
 selenium==3.141.0
 six==1.15.0

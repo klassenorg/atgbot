@@ -77,7 +77,7 @@ def getOrderFromVTB(update, context):
     update.message.reply_text(paymentStatus)
     driver.close()
 
-def getOrderFromSB(update, context):
+def getOrderFromYK(update, context):
     order_id = ''.join(context.args)
     invoice_id = get_invoice_id(order_id)
     driver = webdriver.Chrome(creds.driver_path, options=options)
@@ -87,21 +87,21 @@ def getOrderFromSB(update, context):
     username.send_keys(creds.yk_login)
     enter = driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/div[3]/div/div/div[1]/form/div[3]/button")
     enter.click()
-    time.sleep(1)
+    time.sleep(1.3)
     password = driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/div[3]/div/div/form/div[2]/div/span/input")
     password.click()
     password.send_keys(creds.yk_password)
-    time.sleep(1)
+    time.sleep(1.3)
     submit = driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/div[3]/div/div/form/div[3]/button")
     submit.click()
-    time.sleep(1)
+    time.sleep(1.3)
     allstores = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[1]/span/span[1]")
     allstores.click()
-    time.sleep(1)
+    time.sleep(1.3)
     prod = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[2]/div/div/div[2]/div/div[2]/div[25]/div")
     prod.click()
     driver.get("https://kassa.yandex.ru/my/payments?search=" + invoice_id)
-    time.sleep(1)
+    time.sleep(1.3)
     status = driver.find_elements_by_xpath("/html/body/div[1]/div[2]/div[2]/div/div/div/div[2]/div[3]/div[2]/div/div[2]/div/div[1]/div/div[3]/div/div[1]/div/div[2]/span")
     paymentStatus = status[-1].text
     update.message.reply_text(paymentStatus)
@@ -119,7 +119,7 @@ def main():
 
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("vtb", getOrderFromVTB))
-    dp.add_handler(CommandHandler("sber", getOrderFromSB))
+    dp.add_handler(CommandHandler("yk", getOrderFromYK))
 
     # on noncommand i.e message - echo the message on Telegram
 
