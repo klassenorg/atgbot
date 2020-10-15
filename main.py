@@ -47,7 +47,7 @@ def getOrderFromVTB(update, context):
     """Send VTB order status"""
     order_id = ''.join(context.args)
     ext_order_id = get_external_order_id(order_id)
-    driver = webdriver.Chrome("C:/Users/klass/Downloads/chromedriver.exe", options=options)
+    driver = webdriver.Chrome(creds.driver_path, options=options)
     driver.get('https://platezh.vtb24.ru/mportal/#login')
     username = driver.find_element_by_id("username-inputEl")
     username.click()
@@ -81,7 +81,6 @@ def main():
     dp.add_handler(CommandHandler("vtb", getOrderFromVTB))
 
     # on noncommand i.e message - echo the message on Telegram
-    #dp.add_handler(MessageHandler(Filters.text & ~Filters.command, echo))
 
     # Start the Bot
     updater.start_polling()
