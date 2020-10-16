@@ -3,7 +3,7 @@
 import logging
 import time
 from selenium import webdriver
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler
 import records
 import creds
 
@@ -74,11 +74,12 @@ def getOrderFromVTB(update, context):
     password.send_keys(creds.vtb_password)
     submit = driver.find_element_by_id("button-1117-btnInnerEl")
     submit.click()
+    time.sleep(1)
     driver.get("https://platezh.vtb24.ru/mportal/#orders/" + ext_order_id + "/history?orderNumber=" + order_id)
     table = driver.find_elements_by_class_name("x-grid-cell-paymentState")
     paymentStatus = table[-1].text
     update.message.reply_text(paymentStatus)
-    driver.close()
+    driver.quit()
 
 
 
@@ -111,7 +112,7 @@ def getOrderFromYK(update, context):
     status = driver.find_elements_by_xpath("/html/body/div[1]/div[2]/div[2]/div/div/div/div[2]/div[3]/div[2]/div/div[2]/div/div[1]/div/div[3]/div/div[1]/div/div[2]/span")
     paymentStatus = status[-1].text
     update.message.reply_text(paymentStatus)
-    driver.close()
+    driver.quit()
 
 def main():
     """Start the bot."""
