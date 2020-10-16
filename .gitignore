@@ -2,3 +2,4 @@ venv
 creds.py
 __pycache__
 debug.log
+test.py

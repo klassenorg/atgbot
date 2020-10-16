@@ -40,16 +40,21 @@ def get_external_order_id(order_id):
         rows = rows.as_dict()[0]
         return rows['external_order_id']
 
+yk_env = 'prod'
+
 def get_invoice_id(order_id):
+    global yk_env
     db = initdb('prod')
     rows = db.query("select payment_id, invoice_id from prod_production.mvid_sap_order_yk_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
     if rows.one() is None:
         db = initdb('pilot')
         rows = db.query("select payment_id, invoice_id from pilot_production.mvid_sap_order_yk_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
         rows = rows.as_dict()[0]
+        yk_env = 'pilot'
         return rows['invoice_id']
     else:
         rows = rows.as_dict()[0]
+        yk_env = 'prod'
         return rows['invoice_id']
 
 options = webdriver.ChromeOptions()
@@ -75,6 +80,9 @@ def getOrderFromVTB(update, context):
     update.message.reply_text(paymentStatus)
     driver.close()
 
+
+
+
 def getOrderFromYK(update, context):
     order_id = ''.join(context.args)
     invoice_id = get_invoice_id(order_id)
@@ -93,8 +101,12 @@ def getOrderFromYK(update, context):
     submit.click()
     allstores = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[1]/span/span[1]")
     allstores.click()
-    prod = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[2]/div/div/div[2]/div/div[2]/div[25]/div")
-    prod.click()
+    if yk_env == 'prod':
+        prod = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[2]/div/div/div[2]/div/div[2]/div[25]/div")
+        prod.click()
+    else:
+        pilot = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[2]/div/div/div[2]/div/div[2]/div[26]/div")
+        pilot.click()
     driver.get("https://kassa.yandex.ru/my/payments?search=" + invoice_id)
     status = driver.find_elements_by_xpath("/html/body/div[1]/div[2]/div[2]/div/div/div/div[2]/div[3]/div[2]/div/div[2]/div/div[1]/div/div[3]/div/div[1]/div/div[2]/span")
     paymentStatus = status[-1].text
