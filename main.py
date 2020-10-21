@@ -89,6 +89,14 @@ def getOrderFromVTB(update, context):
 
 
 def getOrderFromYK(update, context):
+    def driverwait(type, value):
+        try:
+            element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((type, value))
+            )
+            return element
+        except:
+            driver.quit()
     order_id = ''.join(context.args)
     invoice_id = get_invoice_id(order_id)
     driver = webdriver.Chrome(creds.driver_path, options=options)
@@ -118,14 +126,6 @@ def getOrderFromYK(update, context):
     paymentStatus = status.text
     update.message.reply_text(paymentStatus)
     driver.quit()
-    def driverwait(type, value):
-        try:
-            element = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((type, value))
-            )
-            return element
-        except:
-            driver.quit()
 
 def main():
     """Start the bot."""
