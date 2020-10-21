@@ -3,6 +3,9 @@
 import logging
 import time
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from telegram.ext import Updater, CommandHandler
 import records
 import creds
@@ -59,6 +62,7 @@ def get_invoice_id(order_id):
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
+options.add_argument('window-size=1920,1080')
 
 def getOrderFromVTB(update, context):
     order_id = ''.join(context.args)
@@ -88,31 +92,40 @@ def getOrderFromYK(update, context):
     order_id = ''.join(context.args)
     invoice_id = get_invoice_id(order_id)
     driver = webdriver.Chrome(creds.driver_path, options=options)
-    driver.implicitly_wait(10)
     driver.get("https://passport.yandex.ru/auth?from=money&origin=merchant&retpath=https%3A%2F%2Fkassa.yandex.ru%2Fmy%2F%3Fget-auth%3Dyes")
-    username = driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/div[3]/div/div/div[1]/form/div[1]/span/input")
-    username.click()
+    username = driverwait(By.ID, "passp-field-login")
+    username.click()                        
     username.send_keys(creds.yk_login)
-    enter = driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/div[3]/div/div/div[1]/form/div[3]/button")
+    enter = driver.find_element_by_class_name("Button2_type_submit")
     enter.click()
-    password = driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/div[3]/div/div/form/div[2]/div/span/input")
+    password = driverwait(By.ID, "passp-field-passwd")
     password.click()
     password.send_keys(creds.yk_password)
-    submit = driver.find_element_by_xpath("/html/body/div/div/div/div[2]/div/div/div[2]/div[3]/div/div/form/div[3]/button")
+    submit = driver.find_element_by_class_name("Button2_type_submit")
     submit.click()
-    allstores = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[1]/span/span[1]")
+    allstores = driverwait(By.CLASS_NAME, "qa-button-open-list-shop")
     allstores.click()
+    
     if yk_env == 'prod':
-        prod = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[2]/div/div/div[2]/div/div[2]/div[25]/div")
+        prod = driverwait(By.XPATH, "//*[text()='shopId 675968']")
         prod.click()
+        
     else:
-        pilot = driver.find_element_by_xpath("/html/body/div[1]/div[2]/header/div/div/div/div[2]/div[1]/div/div/div[2]/div/div/div[2]/div/div[2]/div[26]/div")
+        pilot = driverwait(By.XPATH, "//*[text()='shopId 675969']")
         pilot.click()
     driver.get("https://kassa.yandex.ru/my/payments?search=" + invoice_id)
-    status = driver.find_elements_by_xpath("/html/body/div[1]/div[2]/div[2]/div/div/div/div[2]/div[3]/div[2]/div/div[2]/div/div[1]/div/div[3]/div/div[1]/div/div[2]/span")
-    paymentStatus = status[-1].text
+    status = driverwait(By.XPATH, "//*[@id='root']/div/div/div[2]/div[3]/div[2]/div/div[2]/div[1]/div[1]/div/div[3]/div/div[1]/div/div[2]/span")
+    paymentStatus = status.text
     update.message.reply_text(paymentStatus)
     driver.quit()
+    def driverwait(type, value):
+        try:
+            element = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((type, value))
+            )
+            return element
+        except:
+            driver.quit()
 
 def main():
     """Start the bot."""
