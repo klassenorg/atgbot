@@ -67,65 +67,84 @@ options.add_argument('window-size=1920,1080')
 def getOrderFromVTB(update, context):
     order_id = ''.join(context.args)
     ext_order_id = get_external_order_id(order_id)
-    driver = webdriver.Chrome(creds.driver_path, options=options)
-    driver.implicitly_wait(10)
-    driver.get('https://platezh.vtb24.ru/mportal/#login')
-    username = driver.find_element_by_id("username-inputEl")
-    username.click()
-    username.send_keys(creds.vtb_login)
-    password = driver.find_element_by_id("password-inputEl")
-    password.click()
-    password.send_keys(creds.vtb_password)
-    submit = driver.find_element_by_id("button-1117-btnInnerEl")
-    submit.click()
-    time.sleep(1)
-    driver.get("https://platezh.vtb24.ru/mportal/#orders/" + ext_order_id + "/history?orderNumber=" + order_id)
-    table = driver.find_elements_by_class_name("x-grid-cell-paymentState")
-    paymentStatus = table[-1].text
-    update.message.reply_text(paymentStatus)
-    driver.quit()
+    headers = {
+    'Content-Type': 'application/json',
+    }
+    data = '{ "RequestBody": { "orderNumber": "' + order_id + '", "orderId": "' + ext_order_id + '"} }'
+    response = requests.post('http://prod.sp.mvideo.ru:80/acquiring/rest/banking/payment/info/extended', headers=headers, data=data, auth=('ATG', 'X75gR2J3LJ'))
+    orderStatus = json.loads(json.dumps(json.loads(response.text)['ResponseBody']))['orderStatus']
+    status = {
+        0: 'Заказ зарегистрирован, но не оплачен',
+        1: 'Предавторизованная сумма захолдирована (для двухстадийных платежей)',
+        2: 'Проведена полная авторизация суммы заказа',
+        3: 'Авторизация отменена (Только если мы сами отменили авторизацию)',
+        4: 'По транзакции была проведена операция возврата',
+        5: 'Инициирована авторизация через ACS банка-эмитента (клиент перенаправлен на URL сервиса ACS банка-эмитента для подтверждения платежа по технологии 3DSecure)',
+        6: 'Авторизация отклонена (операцию отклонил или фрод-мониторинг, или получен отказ от эмитента(например нет денег), или ответ эмитента не получен за отведённое время)'
+    }
+    update.message.reply_text(status[orderStatus])
 
+
+def getOrder(update, context):
+    order_id = ''.join(context.args)
+    db = initdb('prod')
+    rows = db.query("select payment_name from prod_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
+    if rows.one() is None:
+        db = initdb('pilot')
+        rows = db.query("select payment_name from pilot_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
+        rows = rows.as_dict()[0]
+        yk_env = 'pilot'
+        payment_type = rows['payment_name']
+    else:
+        rows = rows.as_dict()[0]
+        yk_env = 'prod'
+        payment_type = rows['payment_name']
+    if payment_type == 'onlineCard':
+        ext_order_id = get_external_order_id(order_id)
+        headers = {
+        'Content-Type': 'application/json',
+        }
+        data = '{ "RequestBody": { "orderNumber": "' + order_id + '", "orderId": "' + ext_order_id + '"} }'
+        response = requests.post('http://prod.sp.mvideo.ru:80/acquiring/rest/banking/payment/info/extended', headers=headers, data=data, auth=('ATG', 'X75gR2J3LJ'))
+        orderStatus = json.loads(json.dumps(json.loads(response.text)['ResponseBody']))['orderStatus']
+        status = {
+            0: 'Заказ зарегистрирован, но не оплачен',
+            1: 'Предавторизованная сумма захолдирована (для двухстадийных платежей)',
+            2: 'Проведена полная авторизация суммы заказа',
+            3: 'Авторизация отменена (Только если мы сами отменили авторизацию)',
+            4: 'По транзакции была проведена операция возврата',
+            5: 'Инициирована авторизация через ACS банка-эмитента (клиент перенаправлен на URL сервиса ACS банка-эмитента для подтверждения платежа по технологии 3DSecure)',
+            6: 'Авторизация отклонена (операцию отклонил или фрод-мониторинг, или получен отказ от эмитента(например нет денег), или ответ эмитента не получен за отведённое время)'
+        }
+        update.message.reply_text(status[orderStatus])
+    elif payment_type == 'yandexKassa':
+        invoice_id = get_invoice_id(order_id)
+        if yk_env == 'prod':
+            ykshop = '675968'
+            ykpass = 'live_9GMhH7Km0OPBEGKYFdpPxdpEN5Wo0yskr8yjXvTytSE'
+        else:
+            ykshop = '675969'
+            ykpass = 'live_aMcalwuyJVKJVXPfcUDNj50tyknxyGo0jivCLhs1kVE'
+        myobj = 'https://payment.yandex.net/api/v3/payments/' + invoice_id
+        response = requests.get(myobj, auth=(ykshop, ykpass))
+        update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: 'json.loads(response.text)['status'])
+    else:
+        update.message.reply_text(payment_type)
 
 
 
 def getOrderFromYK(update, context):
-    def driverwait(type, value):
-        try:
-            element = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((type, value))
-            )
-            return element
-        except:
-            driver.quit()
     order_id = ''.join(context.args)
     invoice_id = get_invoice_id(order_id)
-    driver = webdriver.Chrome(creds.driver_path, options=options)
-    driver.get("https://passport.yandex.ru/auth?from=money&origin=merchant&retpath=https%3A%2F%2Fkassa.yandex.ru%2Fmy%2F%3Fget-auth%3Dyes")
-    username = driverwait(By.ID, "passp-field-login")
-    username.click()                        
-    username.send_keys(creds.yk_login)
-    enter = driver.find_element_by_class_name("Button2_type_submit")
-    enter.click()
-    password = driverwait(By.ID, "passp-field-passwd")
-    password.click()
-    password.send_keys(creds.yk_password)
-    submit = driver.find_element_by_class_name("Button2_type_submit")
-    submit.click()
-    allstores = driverwait(By.CLASS_NAME, "qa-button-open-list-shop")
-    allstores.click()
-    
     if yk_env == 'prod':
-        prod = driverwait(By.XPATH, "//*[text()='shopId 675968']")
-        prod.click()
-        
+        ykshop = '675968'
+        ykpass = 'live_9GMhH7Km0OPBEGKYFdpPxdpEN5Wo0yskr8yjXvTytSE'
     else:
-        pilot = driverwait(By.XPATH, "//*[text()='shopId 675969']")
-        pilot.click()
-    driver.get("https://kassa.yandex.ru/my/payments?search=" + invoice_id)
-    status = driverwait(By.XPATH, "//*[@id='root']/div/div/div[2]/div[3]/div[2]/div/div[2]/div[1]/div[1]/div/div[3]/div/div[1]/div/div[2]/span")
-    paymentStatus = status.text
-    update.message.reply_text(paymentStatus)
-    driver.quit()
+        ykshop = '675969'
+        ykpass = 'live_aMcalwuyJVKJVXPfcUDNj50tyknxyGo0jivCLhs1kVE'
+    myobj = 'https://payment.yandex.net/api/v3/payments/' + invoice_id
+    response = requests.get(myobj, auth=(ykshop, ykpass))
+    update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: 'json.loads(response.text)['status'])
 
 def main():
     """Start the bot."""
@@ -140,6 +159,7 @@ def main():
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("vtb", getOrderFromVTB))
     dp.add_handler(CommandHandler("yk", getOrderFromYK))
+    dp.add_handler(CommandHandler("order", getOrder))
 
     # on noncommand i.e message - echo the message on Telegram
 
