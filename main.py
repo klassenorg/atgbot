@@ -9,6 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from telegram.ext import Updater, CommandHandler
 import records
 import creds
+import requests
+import json 
 
 # Enable logging
 logging.basicConfig(
@@ -64,30 +66,16 @@ options = webdriver.ChromeOptions()
 options.add_argument('headless')
 options.add_argument('window-size=1920,1080')
 
-def getOrderFromVTB(update, context):
-    order_id = ''.join(context.args)
-    ext_order_id = get_external_order_id(order_id)
-    headers = {
-    'Content-Type': 'application/json',
-    }
-    data = '{ "RequestBody": { "orderNumber": "' + order_id + '", "orderId": "' + ext_order_id + '"} }'
-    response = requests.post('http://prod.sp.mvideo.ru:80/acquiring/rest/banking/payment/info/extended', headers=headers, data=data, auth=('ATG', 'X75gR2J3LJ'))
-    orderStatus = json.loads(json.dumps(json.loads(response.text)['ResponseBody']))['orderStatus']
-    status = {
-        0: 'Заказ зарегистрирован, но не оплачен',
-        1: 'Предавторизованная сумма захолдирована (для двухстадийных платежей)',
-        2: 'Проведена полная авторизация суммы заказа',
-        3: 'Авторизация отменена (Только если мы сами отменили авторизацию)',
-        4: 'По транзакции была проведена операция возврата',
-        5: 'Инициирована авторизация через ACS банка-эмитента (клиент перенаправлен на URL сервиса ACS банка-эмитента для подтверждения платежа по технологии 3DSecure)',
-        6: 'Авторизация отклонена (операцию отклонил или фрод-мониторинг, или получен отказ от эмитента(например нет денег), или ответ эмитента не получен за отведённое время)'
-    }
-    update.message.reply_text(status[orderStatus])
-
-
 def getOrder(update, context):
     order_id = ''.join(context.args)
     db = initdb('prod')
+    orderRows = db.query("select atg_order_id, status, export_stage, creation_datetime, bips, ip_user from prod_production.mvid_sap_order mco where mco.payment_id = " + chr(39) + str(order_id) + chr(39))
+    atg_order_id = orderRows['atg_order_id']
+    status = orderRows['status']
+    export_stage = orderRows['export_stage']
+    creation_datetime = orderRows['creation_datetime']
+    bips = orderRows['bips']
+    ip_user = orderRows['ip_user']
     rows = db.query("select payment_name from prod_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
     if rows.one() is None:
         db = initdb('pilot')
@@ -116,7 +104,16 @@ def getOrder(update, context):
             5: 'Инициирована авторизация через ACS банка-эмитента (клиент перенаправлен на URL сервиса ACS банка-эмитента для подтверждения платежа по технологии 3DSecure)',
             6: 'Авторизация отклонена (операцию отклонил или фрод-мониторинг, или получен отказ от эмитента(например нет денег), или ответ эмитента не получен за отведённое время)'
         }
-        update.message.reply_text(status[orderStatus])
+        update.message.reply_text(
+            "Номер заказа: " + order_id + 
+            "\nATG Order ID: " + atg_order_id +
+            "\nStatus: " + status +
+            "\nExport stage: " + export_stage +
+            "\nВремя создания: " + creation_datetime + 
+            "\nbips: " + bips +
+            "\nIP: " + ip_user +
+            "\nСтатус платежа: " + status[orderStatus]
+            )
     elif payment_type == 'yandexKassa':
         invoice_id = get_invoice_id(order_id)
         if yk_env == 'prod':
@@ -127,24 +124,18 @@ def getOrder(update, context):
             ykpass = 'live_aMcalwuyJVKJVXPfcUDNj50tyknxyGo0jivCLhs1kVE'
         myobj = 'https://payment.yandex.net/api/v3/payments/' + invoice_id
         response = requests.get(myobj, auth=(ykshop, ykpass))
-        update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: ' + json.loads(response.text)['status'])
+        update.message.reply_text(
+            "Номер заказа: " + order_id + 
+            "\nATG Order ID: " + atg_order_id +
+            "\nStatus: " + status +
+            "\nExport stage: " + export_stage +
+            "\nВремя создания: " + creation_datetime + 
+            "\nbips: " + bips +
+            "\nIP: " + ip_user +
+            "\nСтатус платежа: " + 'Paid: ' + str(json.loads(response.text)['paid']) + ', Status: ' + json.loads(response.text)['status']
+            )
     else:
         update.message.reply_text(payment_type)
-
-
-
-def getOrderFromYK(update, context):
-    order_id = ''.join(context.args)
-    invoice_id = get_invoice_id(order_id)
-    if yk_env == 'prod':
-        ykshop = '675968'
-        ykpass = 'live_9GMhH7Km0OPBEGKYFdpPxdpEN5Wo0yskr8yjXvTytSE'
-    else:
-        ykshop = '675969'
-        ykpass = 'live_aMcalwuyJVKJVXPfcUDNj50tyknxyGo0jivCLhs1kVE'
-    myobj = 'https://payment.yandex.net/api/v3/payments/' + invoice_id
-    response = requests.get(myobj, auth=(ykshop, ykpass))
-    update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: '+ json.loads(response.text)['status'])
 
 def main():
     """Start the bot."""
@@ -157,8 +148,6 @@ def main():
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
-    dp.add_handler(CommandHandler("vtb", getOrderFromVTB))
-    dp.add_handler(CommandHandler("yk", getOrderFromYK))
     dp.add_handler(CommandHandler("order", getOrder))
 
     # on noncommand i.e message - echo the message on Telegram
