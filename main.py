@@ -107,7 +107,7 @@ def getOrder(update, context):
         }
         totalPriceAndPaymentAmount = db.query("select mso.total_price, vp.payment_amount from prod_production.mvid_sap_order mso join prod_production.mvid_sap_order_vtb_payment vp on vp.payment_id = mso.payment_id where order_id = " + chr(39) + str(order_id) + chr(39))
         totalPrice = str(totalPriceAndPaymentAmount.one()['total_price'])
-        paymentAmount = str(totalPriceAndPaymentAmount.one()['payment_amount'])
+        paymentAmount = str(totalPriceAndPaymentAmount.one()['payment_amount']/100)
         update.message.reply_text(
             "Номер заказа: " + order_id + 
             "\nATG Order ID: " + atg_order_id +
@@ -117,8 +117,8 @@ def getOrder(update, context):
             "\nbips: " + bips +
             "\nIP: " + ip_user +
             "\nОплата: " + payment_type +
-            "\n Сумма заказа: " + totalPrice +
-            "\n Сумма оплаты: " + paymentAmount +
+            "\nСумма заказа: " + totalPrice +
+            "\nСумма оплаты: " + paymentAmount +
             "\nСтатус платежа: " + status[orderStatus]
             )
     elif payment_type == 'yandexKassa':
