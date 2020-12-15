@@ -127,7 +127,7 @@ def getOrder(update, context):
             ykpass = 'live_aMcalwuyJVKJVXPfcUDNj50tyknxyGo0jivCLhs1kVE'
         myobj = 'https://payment.yandex.net/api/v3/payments/' + invoice_id
         response = requests.get(myobj, auth=(ykshop, ykpass))
-        update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: 'json.loads(response.text)['status'])
+        update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: ' + json.loads(response.text)['status'])
     else:
         update.message.reply_text(payment_type)
 
@@ -144,7 +144,7 @@ def getOrderFromYK(update, context):
         ykpass = 'live_aMcalwuyJVKJVXPfcUDNj50tyknxyGo0jivCLhs1kVE'
     myobj = 'https://payment.yandex.net/api/v3/payments/' + invoice_id
     response = requests.get(myobj, auth=(ykshop, ykpass))
-    update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: 'json.loads(response.text)['status'])
+    update.message.reply_text('Paid: ' + json.loads(response.text)['paid'] + '\nStatus: '+ json.loads(response.text)['status'])
 
 def main():
     """Start the bot."""
