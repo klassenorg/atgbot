@@ -70,7 +70,8 @@ options.add_argument('window-size=1920,1080')
 def getOrder(update, context):
     order_id = ''.join(context.args)
     db = initdb('prod')
-    if db.query("select order_id from prod_production.mvid_sap_order where order_id = " + chr(39) + str(order_id) + chr(39)) is None: 
+    checkDB = db.query("select order_id from prod_production.mvid_sap_order where order_id = " + chr(39) + str(order_id) + chr(39))
+    if checkDB.one() is None: 
         update.message.reply_text('Заказа нет в БД.')
     else: 
         orderRows = db.query("select atg_order_id, status, export_stage, creation_datetime, bips, ip_user from prod_production.mvid_sap_order mco where mco.payment_id = " + chr(39) + str(order_id) + chr(39))
