@@ -70,12 +70,12 @@ def getOrder(update, context):
     order_id = ''.join(context.args)
     db = initdb('prod')
     orderRows = db.query("select atg_order_id, status, export_stage, creation_datetime, bips, ip_user from prod_production.mvid_sap_order mco where mco.payment_id = " + chr(39) + str(order_id) + chr(39))
-    atg_order_id = orderRows['atg_order_id']
-    status = orderRows['status']
-    export_stage = orderRows['export_stage']
-    creation_datetime = orderRows['creation_datetime']
-    bips = orderRows['bips']
-    ip_user = orderRows['ip_user']
+    atg_order_id = orderRows.one()['atg_order_id']
+    status = orderRows.one()['status']
+    export_stage = orderRows.one()['export_stage']
+    creation_datetime = orderRows.one()['creation_datetime']
+    bips = orderRows.one()['bips']
+    ip_user = orderRows.one()['ip_user']
     rows = db.query("select payment_name from prod_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
     if rows.one() is None:
         db = initdb('pilot')
