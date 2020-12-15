@@ -73,7 +73,7 @@ def getOrder(update, context):
     atg_order_id = orderRows.one()['atg_order_id']
     status = orderRows.one()['status']
     export_stage = orderRows.one()['export_stage']
-    creation_datetime = orderRows.one()['creation_datetime']
+    creation_datetime = orderRows.one()['creation_datetime'].strftime("%d.%m.%y %H:%M:%S")
     bips = orderRows.one()['bips']
     ip_user = orderRows.one()['ip_user']
     rows = db.query("select payment_name from prod_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
