@@ -72,7 +72,7 @@ def getOrder(update, context):
     db = initdb('prod')
     orderRows = db.query("select atg_order_id, status, export_stage, creation_datetime, bips, ip_user from prod_production.mvid_sap_order mco where mco.payment_id = " + chr(39) + str(order_id) + chr(39))
     atg_order_id = orderRows.one()['atg_order_id']
-    status = orderRows.one()['status']
+    statusOrd = orderRows.one()['status']
     export_stage = orderRows.one()['export_stage']
     creation_datetime = orderRows.one()['creation_datetime'].strftime("%d.%m.%y %H:%M:%S")
     bips = orderRows.one()['bips']
@@ -108,13 +108,13 @@ def getOrder(update, context):
         update.message.reply_text(
             "Номер заказа: " + order_id + 
             "\nATG Order ID: " + atg_order_id +
-            "\nStatus: " + status +
+            "\nStatus: " + statusOrd +
             "\nExport stage: " + export_stage +
             "\nВремя создания: " + creation_datetime + 
             "\nbips: " + bips +
             "\nIP: " + ip_user +
-            "\nТип платежа: " + payment_type +
-            "\nСтатус платежа: " + status[orderStatus]
+            "\nОплата: " + payment_type +
+            "\nСтатус платежа: " + status[orderStatus][0]
             )
     elif payment_type == 'yandexKassa':
         invoice_id = get_invoice_id(order_id)
@@ -129,24 +129,24 @@ def getOrder(update, context):
         update.message.reply_text(
             "Номер заказа: " + order_id + 
             "\nATG Order ID: " + atg_order_id +
-            "\nStatus: " + status +
+            "\nStatus: " + statusOrd +
             "\nExport stage: " + export_stage +
             "\nВремя создания: " + creation_datetime + 
             "\nbips: " + bips +
             "\nIP: " + ip_user +
-            "\nТип платежа: " + payment_type +
+            "\nОплата: " + payment_type +
             "\nСтатус платежа: " + 'Paid: ' + str(json.loads(response.text)['paid']) + ', Status: ' + json.loads(response.text)['status']
             )
     else:
         update.message.reply_text(
             "Номер заказа: " + order_id + 
             "\nATG Order ID: " + atg_order_id +
-            "\nStatus: " + status +
+            "\nStatus: " + statusOrd +
             "\nExport stage: " + export_stage +
             "\nВремя создания: " + creation_datetime + 
             "\nbips: " + bips +
             "\nIP: " + ip_user +
-            "\nТип платежа: " + payment_type
+            "\nОплата: " + payment_type
             )
 
 def main():
