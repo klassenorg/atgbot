@@ -11,6 +11,7 @@ import records
 import creds
 import requests
 import json 
+from datetime import datetime
 
 # Enable logging
 logging.basicConfig(
@@ -112,6 +113,7 @@ def getOrder(update, context):
             "\nВремя создания: " + creation_datetime + 
             "\nbips: " + bips +
             "\nIP: " + ip_user +
+            "\nТип платежа: " + payment_type +
             "\nСтатус платежа: " + status[orderStatus]
             )
     elif payment_type == 'yandexKassa':
@@ -132,10 +134,20 @@ def getOrder(update, context):
             "\nВремя создания: " + creation_datetime + 
             "\nbips: " + bips +
             "\nIP: " + ip_user +
+            "\nТип платежа: " + payment_type +
             "\nСтатус платежа: " + 'Paid: ' + str(json.loads(response.text)['paid']) + ', Status: ' + json.loads(response.text)['status']
             )
     else:
-        update.message.reply_text(payment_type)
+        update.message.reply_text(
+            "Номер заказа: " + order_id + 
+            "\nATG Order ID: " + atg_order_id +
+            "\nStatus: " + status +
+            "\nExport stage: " + export_stage +
+            "\nВремя создания: " + creation_datetime + 
+            "\nbips: " + bips +
+            "\nIP: " + ip_user +
+            "\nТип платежа: " + payment_type
+            )
 
 def main():
     """Start the bot."""
