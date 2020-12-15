@@ -135,7 +135,7 @@ def getOrder(update, context):
             "\nbips: " + bips +
             "\nIP: " + ip_user +
             "\nОплата: " + payment_type +
-            "\nСтатус платежа: " + 'Оплачено' if json.loads(response.text)['paid'] else 'Не оплачено' + ', Status: ' + json.loads(response.text)['status']
+            "\nСтатус платежа: " + json.loads(response.text)['status'] + ", Оплачено" if json.loads(response.text)['paid'] else ", Не оплачено"
             )
     else:
         update.message.reply_text(
