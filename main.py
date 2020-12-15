@@ -106,6 +106,9 @@ def getOrder(update, context):
                 5: 'Инициирована авторизация через ACS банка-эмитента (клиент перенаправлен на URL сервиса ACS банка-эмитента для подтверждения платежа по технологии 3DSecure)',
                 6: 'Авторизация отклонена (операцию отклонил или фрод-мониторинг, или получен отказ от эмитента(например нет денег), или ответ эмитента не получен за отведённое время)'
             }
+            totalPriceAndPaymentAmount = db.query("select mso.total_price, vp.payment_amount from prod_production.mvid_sap_order mso join prod_production.mvid_sap_order_vtb_payment vp on vp.payment_id = mso.payment_id where order_id = " + chr(39) + str(order_id) + chr(39))
+            totalPrice = totalPriceAndPaymentAmount.one()['total_price']
+            paymentAmount = totalPriceAndPaymentAmount.one()['payment_amount']
             update.message.reply_text(
                 "Номер заказа: " + order_id + 
                 "\nATG Order ID: " + atg_order_id +
@@ -115,6 +118,8 @@ def getOrder(update, context):
                 "\nbips: " + bips +
                 "\nIP: " + ip_user +
                 "\nОплата: " + payment_type +
+                "\n Сумма заказа: " + totalPrice +
+                "\n Сумма оплаты: " + paymentAmount +
                 "\nСтатус платежа: " + status[orderStatus]
                 )
         elif payment_type == 'yandexKassa':
