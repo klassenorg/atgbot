@@ -114,7 +114,7 @@ def getOrder(update, context):
             "\nbips: " + bips +
             "\nIP: " + ip_user +
             "\nОплата: " + payment_type +
-            "\nСтатус платежа: " + status[orderStatus][0]
+            "\nСтатус платежа: " + status[orderStatus]
             )
     elif payment_type == 'yandexKassa':
         invoice_id = get_invoice_id(order_id)
@@ -135,7 +135,7 @@ def getOrder(update, context):
             "\nbips: " + bips +
             "\nIP: " + ip_user +
             "\nОплата: " + payment_type +
-            "\nСтатус платежа: " + 'Paid: ' + str(json.loads(response.text)['paid']) + ', Status: ' + json.loads(response.text)['status']
+            "\nСтатус платежа: " + 'Оплачено' if json.loads(response.text)['paid'] else 'Не оплачено' + ', Status: ' + json.loads(response.text)['status']
             )
     else:
         update.message.reply_text(
