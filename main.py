@@ -106,8 +106,14 @@ def getOrder(update, context):
             6: 'Авторизация отклонена (операцию отклонил или фрод-мониторинг, или получен отказ от эмитента(например нет денег), или ответ эмитента не получен за отведённое время)'
         }
         totalPriceAndPaymentAmount = db.query("select mso.total_price, vp.payment_amount from prod_production.mvid_sap_order mso join prod_production.mvid_sap_order_vtb_payment vp on vp.payment_id = mso.payment_id where order_id = " + chr(39) + str(order_id) + chr(39))
-        totalPrice = str(totalPriceAndPaymentAmount.one()['total_price'])
-        paymentAmount = str(totalPriceAndPaymentAmount.one()['payment_amount']/100)
+        if totalPriceAndPaymentAmount.one()['total_price'] is not None:
+            totalPrice = str(totalPriceAndPaymentAmount.one()['total_price'])
+        else: 
+            totalPrice = 'null'
+        if totalPriceAndPaymentAmount.one()['payment_amount'] is not None:
+            paymentAmount = str(totalPriceAndPaymentAmount.one()['payment_amount']/100)
+        else:
+            paymentAmount = 'null'
         update.message.reply_text(
             "Номер заказа: " + order_id + 
             "\nATG Order ID: " + atg_order_id +
