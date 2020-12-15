@@ -165,7 +165,7 @@ def main():
     dp = updater.dispatcher
 
     # on different commands - answer in Telegram
-    dp.add_handler(CommandHandler("order", tryOrder))
+    dp.add_handler(CommandHandler("order", getOrder))
 
     # on noncommand i.e message - echo the message on Telegram
 
