@@ -12,6 +12,7 @@ import creds
 import requests
 import json 
 from datetime import datetime
+import re
 
 # Enable logging
 logging.basicConfig(
@@ -68,8 +69,8 @@ options.add_argument('headless')
 options.add_argument('window-size=1920,1080')
 
 def checkOrder(order_id):
-    orderid = str(orderid)
-    if orderid.isdigit() is not True or len(orderid)!=10 or re.match('[17][50][1-9]*\d*', orderid) is None:
+    order_id = str(order_id)
+    if order_id.isdigit() is not True or len(order_id)!=10 or re.match('[17][50][1-9]*\d*', order_id) is None:
         return False
     else:
         return True
