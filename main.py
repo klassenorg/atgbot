@@ -35,34 +35,13 @@ def initdb(env):
         return database
     return database
 
-def get_external_order_id(order_id):
-    db = initdb('prod')
-    rows = db.query("select payment_id, external_order_id from prod_production.mvid_sap_order_vtb_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
-    if rows.one() is None:
-        db = initdb('pilot')
-        rows = db.query("select payment_id, external_order_id from pilot_production.mvid_sap_order_vtb_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
-        rows = rows.as_dict()[0]
-        return rows['external_order_id']
-    else:
-        rows = rows.as_dict()[0]
-        return rows['external_order_id']
+def get_external_order_id(order_id, env):
+    db = initdb(env)
+    return db.query("select payment_id, external_order_id from "+ env +"_production.mvid_sap_order_vtb_payment where payment_id = " + chr(39) + str(order_id) + chr(39)).one()['external_order_id']
 
-yk_env = 'prod'
-
-def get_invoice_id(order_id):
-    global yk_env
-    db = initdb('prod')
-    rows = db.query("select payment_id, invoice_id from prod_production.mvid_sap_order_yk_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
-    if rows.one() is None:
-        db = initdb('pilot')
-        rows = db.query("select payment_id, invoice_id from pilot_production.mvid_sap_order_yk_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
-        rows = rows.as_dict()[0]
-        yk_env = 'pilot'
-        return rows['invoice_id']
-    else:
-        rows = rows.as_dict()[0]
-        yk_env = 'prod'
-        return rows['invoice_id']
+def get_invoice_id(order_id, env):
+    db = initdb(env)
+    return db.query("select invoice_id from "+ env +"_production.mvid_sap_order_yk_payment where payment_id = " + chr(39) + str(order_id) + chr(39)).one()['invoice_id']
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
@@ -98,7 +77,7 @@ def getOrder(update, context):
     #online card
     if payment == 'onlineCard':
         headers = {'Content-Type': 'application/json'}
-        data = '{ "RequestBody": { "orderNumber": "' + order_id + '", "orderId": "' + get_external_order_id(order_id) + '"} }'
+        data = '{ "RequestBody": { "orderNumber": "' + order_id + '", "orderId": "' + db.query("select external_order_id from "+ env +"_production.mvid_sap_order_vtb_payment where payment_id = " + chr(39) + str(order_id) + chr(39)).one()['external_order_id'] + '"} }'
         response = requests.post('http://prod.sp.mvideo.ru:80/acquiring/rest/banking/payment/info/extended', headers=headers, data=data, auth=('ATG', creds.sppass))
         orderStatus = json.loads(json.dumps(json.loads(response.text)['ResponseBody']))['orderStatus']
         status = {
@@ -146,7 +125,7 @@ IP: {}
             )
         )
     elif payment == 'yandexKassa':
-        response = requests.get('https://payment.yandex.net/api/v3/payments/' + get_invoice_id(order_id), auth=(creds.yk_shop[env], creds.yk_pass[env]))
+        response = requests.get('https://payment.yandex.net/api/v3/payments/' + db.query("select invoice_id from "+ env +"_production.mvid_sap_order_yk_payment where payment_id = " + chr(39) + str(order_id) + chr(39)).one()['invoice_id'], auth=(creds.yk_shop[env], creds.yk_pass[env]))
         update.message.reply_text(
             '''
 Номер заказа: {}, env: {}
