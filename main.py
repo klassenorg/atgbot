@@ -256,15 +256,16 @@ def getOrderNew(update, context):
         )
     else:
         update.message.reply_text(
-            '''Номер заказа: {}
-            ATG Order ID: {}
-            Status: {}
-            Export stage: {}
-            Время создания: {}
-            bips: {}
-            IP: {}
-            Оплата: {}'''.format(
-                order_id, 
+            '''
+Номер заказа: {}, env: {}
+ATG Order ID: {}
+Status: {}
+Export stage: {}
+Время создания: {}
+bips: {}
+IP: {}
+Оплата: {}'''.format(
+                order_id, env,
                 order['atg_order_id'], 
                 order['status'],
                 order['export_stage'],
