@@ -67,9 +67,20 @@ options = webdriver.ChromeOptions()
 options.add_argument('headless')
 options.add_argument('window-size=1920,1080')
 
+def checkOrder(order_id):
+    orderid = str(orderid)
+    if orderid.isdigit() is not True or len(orderid)!=10 or re.match('[17][50][1-9]*\d*', orderid) is None:
+        return False
+    else:
+        return True
+
+
 def getOrder(update, context):
     #env init
     order_id = ''.join(context.args)
+    if checkOrder(order_id) is not True:
+        update.message.reply_text('Неправильный номер заказа.')
+        return
     env = 'prod'
     db = initdb(env)
     #check prod
