@@ -178,8 +178,102 @@ def getOrderNew(update, context):
         if db.query("select order_id from "+ env +"_production.mvid_sap_order where order_id = " + chr(39) + str(order_id) + chr(39)).one() is None:
             update.message.reply_text('Заказа нет в БД.')
             return
-    update.message.reply_text('Заказ на ' + env)
-
+    #get order info
+    order = db.query("select atg_order_id, status, export_stage, creation_datetime, bips, ip_user from "+ env +"_production.mvid_sap_order where order_id = " + chr(39) + str(order_id) + chr(39)).one()
+    payment = db.query("select payment_name from "+ env +"_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39)).one()['payment_name']
+    #online card
+    if payment == 'onlineCard':
+        headers = {'Content-Type': 'application/json'}
+        data = '{ "RequestBody": { "orderNumber": "' + order_id + '", "orderId": "' + get_external_order_id(order_id) + '"} }'
+        response = requests.post('http://prod.sp.mvideo.ru:80/acquiring/rest/banking/payment/info/extended', headers=headers, data=data, auth=('ATG', creds.sppass))
+        orderStatus = json.loads(json.dumps(json.loads(response.text)['ResponseBody']))['orderStatus']
+        status = {
+            0: 'Заказ зарегистрирован, но не оплачен',
+            1: 'Предавторизованная сумма захолдирована (для двухстадийных платежей)',
+            2: 'Проведена полная авторизация суммы заказа',
+            3: 'Авторизация отменена (Только если мы сами отменили авторизацию)',
+            4: 'По транзакции была проведена операция возврата',
+            5: 'Инициирована авторизация через ACS банка-эмитента (клиент перенаправлен на URL сервиса ACS банка-эмитента для подтверждения платежа по технологии 3DSecure)',
+            6: 'Авторизация отклонена (операцию отклонил или фрод-мониторинг, или получен отказ от эмитента(например нет денег), или ответ эмитента не получен за отведённое время)'
+        }
+        totalPriceAndPaymentAmount = db.query("select mso.total_price, vp.payment_amount from "+ env +"_production.mvid_sap_order mso join "+ env +"_production.mvid_sap_order_vtb_payment vp on vp.payment_id = mso.payment_id where order_id = " + chr(39) + str(order_id) + chr(39))
+        if totalPriceAndPaymentAmount.one()['total_price'] is not None:
+            totalPrice = str(totalPriceAndPaymentAmount.one()['total_price'])
+        else: 
+            totalPrice = 'null'
+        if totalPriceAndPaymentAmount.one()['payment_amount'] is not None:
+            paymentAmount = str(totalPriceAndPaymentAmount.one()['payment_amount']/100)
+        else:
+            paymentAmount = 'null'
+        update.message.reply_text(
+            '''Номер заказа: {}
+            ATG Order ID: {}
+            Status: {}
+            Export stage: {}
+            Время создания: {}
+            bips: {}
+            IP: {}
+            Оплата: {}
+            Сумма заказа: {}
+            Сумма оплаты: {}
+            Статус платежа: {}'''.format(
+                order_id, 
+                order['atg_order_id'], 
+                order['status'],
+                order['export_stage'],
+                order['creation_datetime'].strftime("%d.%m.%y %H:%M:%S"),
+                order['bips'],
+                order['ip_user'],
+                payment,
+                totalPrice,
+                paymentAmount,
+                status[orderStatus]
+            )
+        )
+    elif payment == 'yandexKassa':
+        response = requests.get('https://payment.yandex.net/api/v3/payments/' + get_invoice_id(order_id), auth=(creds.yk_shop[env], creds.yk_pass[env]))
+        update.message.reply_text(
+            '''Номер заказа: {}
+            ATG Order ID: {}
+            Status: {}
+            Export stage: {}
+            Время создания: {}
+            bips: {}
+            IP: {}
+            Оплата: {}
+            Статус платежа: {}, {}'''.format(
+                order_id, 
+                order['atg_order_id'], 
+                order['status'],
+                order['export_stage'],
+                order['creation_datetime'].strftime("%d.%m.%y %H:%M:%S"),
+                order['bips'],
+                order['ip_user'],
+                payment,
+                json.loads(response.text)['status'],
+                "Оплачено" if json.loads(response.text)['paid'] else "Не оплачено"
+            )
+        )
+    else:
+        update.message.reply_text(
+            '''Номер заказа: {}
+            ATG Order ID: {}
+            Status: {}
+            Export stage: {}
+            Время создания: {}
+            bips: {}
+            IP: {}
+            Оплата: {}'''.format(
+                order_id, 
+                order['atg_order_id'], 
+                order['status'],
+                order['export_stage'],
+                order['creation_datetime'].strftime("%d.%m.%y %H:%M:%S"),
+                order['bips'],
+                order['ip_user'],
+                payment
+            )
+        )
 
 
 def main():
