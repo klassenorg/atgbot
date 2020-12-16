@@ -74,14 +74,14 @@ def getOrder(update, context):
     if checkDB.one() is None: 
         update.message.reply_text('Заказа нет в БД.')
     else: 
-        orderRows = db.query("select atg_order_id, status, export_stage, creation_datetime, bips, ip_user from "+ env +"_production.mvid_sap_order mco where mco.payment_id = " + chr(39) + str(order_id) + chr(39))
+        orderRows = db.query("select atg_order_id, status, export_stage, creation_datetime, bips, ip_user from prod_production.mvid_sap_order mco where mco.payment_id = " + chr(39) + str(order_id) + chr(39))
         atg_order_id = orderRows.one()['atg_order_id']
         statusOrd = orderRows.one()['status']
         export_stage = orderRows.one()['export_stage']
         creation_datetime = orderRows.one()['creation_datetime'].strftime("%d.%m.%y %H:%M:%S")
         bips = orderRows.one()['bips']
         ip_user = orderRows.one()['ip_user']
-        rows = db.query("select payment_name from "+ env +"_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
+        rows = db.query("select payment_name from prod_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
         if rows.one() is None:
             db = initdb('pilot')
             rows = db.query("select payment_name from pilot_production.mvid_sap_order_payment where payment_id = " + chr(39) + str(order_id) + chr(39))
