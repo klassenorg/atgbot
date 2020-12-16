@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-
 import logging
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from telegram.ext import Updater, CommandHandler
 import records
 import creds
@@ -24,41 +18,19 @@ logger = logging.getLogger(__name__)
 def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
 
-
 #initiate DB
 def initdb(env):
     if env == 'prod':
         database = records.Database(creds.ATGPRD)
         return database
-    else:
+    elif env == 'pilot':
         database = records.Database(creds.ATGPLT)
         return database
-    return database
-
-def get_external_order_id(order_id, env):
-    db = initdb(env)
-    return db.query("select payment_id, external_order_id from "+ env +"_production.mvid_sap_order_vtb_payment where payment_id = " + chr(39) + str(order_id) + chr(39)).one()['external_order_id']
-
-def get_invoice_id(order_id, env):
-    db = initdb(env)
-    return db.query("select invoice_id from "+ env +"_production.mvid_sap_order_yk_payment where payment_id = " + chr(39) + str(order_id) + chr(39)).one()['invoice_id']
-
-options = webdriver.ChromeOptions()
-options.add_argument('headless')
-options.add_argument('window-size=1920,1080')
-
-def checkOrder(order_id):
-    order_id = str(order_id)
-    if order_id.isdigit() is not True or len(order_id)!=10 or re.match('[17][50][1-9]*\d*', order_id) is None:
-        return False
-    else:
-        return True
-
 
 def getOrder(update, context):
     #env init
     order_id = ''.join(context.args)
-    if checkOrder(order_id) is not True:
+    if order_id.isdigit() is not True or len(order_id) != 10 or re.match('[17][50][1-9]*\d*', order_id) is None:
         update.message.reply_text('Неправильный номер заказа.')
         return
     env = 'prod'
